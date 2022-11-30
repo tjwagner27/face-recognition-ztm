@@ -1,14 +1,12 @@
-//potential improvements to work on...
-//1) shared component form for sign in and register that accepts props to create form
-//2) delete user request
 import React, { Component } from 'react';
+import ParticlesBg from 'particles-bg'
 import Navigation from './components/Navigation';
 import Logo from './components/Logo';
 import ImageLinkForm from './components/ImageLinkForm';
 import Rank from './components/Rank';
 import FaceRecognition from './components/FaceRecognition';
-import Signin from './components/Signin';
-import Register from './components/Register';
+import ProfileOverview from './components/ProfileOverview';
+import SigninRegister from './components/SigninRegister';
 import './App.css';
 
 const initialState = {
@@ -23,7 +21,8 @@ const initialState = {
     name: '',
     entries: 0,
     joined: ''
-  }
+  },
+  loading: false
 }
 class App extends Component {
   constructor() {
@@ -56,7 +55,7 @@ class App extends Component {
   
   displayFaceBox = (box) => {
     this.setState({box: box})
-    console.log(box, 'displayFaceBox')
+    // console.log(box, 'displayFaceBox')
   }
   
   onInputChange = (event) => {
@@ -64,68 +63,90 @@ class App extends Component {
   }
   
   onPhotoSubmit = () => {
-    this.setState({imageUrl: this.state.input})
-      fetch('https://pacific-brook-10585.herokuapp.com/imageurl', {
-          method: 'post',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            input: this.state.input
-        })
-      })
-      .then(response => response.json())
-      .then(response => {
-        if(response) {
-          fetch('https://pacific-brook-10585.herokuapp.com/image', {
-            method: 'put',
+    if (!this.state.loading) {
+      this.setState({loading: true})
+      this.setState({imageUrl: this.state.input})
+        //deloyed
+        fetch('https://pacific-brook-10585.herokuapp.com/imageurl', {
+        // // testing
+        // fetch(`http://127.0.0.1:3000/imageurl`, {
+            method: 'post',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-              id: this.state.user.id
+              input: this.state.input
           })
         })
-            .then(response => response.json())
-            .then(count => {
-              this.setState(Object.assign(this.state.user, { entries: count }))
-      //count can we use ...rest or prev => prev + entries?
-              })
-              .catch(console.log)
-            }
-      this.displayFaceBox(this.calculateFaceLocation(response))
-    })
-    .catch(err => console.log(err));
+        .then(response => response.json())
+        .then(response => {
+          if(response) {
+            //deployed
+            fetch('https://pacific-brook-10585.herokuapp.com/image', {
+            // testing
+            // fetch(`http://127.0.0.1:3000/image`, {
+              method: 'put',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                id: this.state.user.id
+            })
+          })
+              .then(response => response.json())
+              .then(count => {
+                this.setState(Object.assign(this.state.user, { entries: count }))
+                })
+              }
+        this.displayFaceBox(this.calculateFaceLocation(response))
+        setTimeout(() => this.setState({loading: false}), 5000)
+      })
+      .catch(err => console.log(err));
+    }
   }
   
   onRouteChange = (route) => {
     if (route === 'signout') {
       this.setState(initialState)
     } else if (route === 'home') {
-      this.setState({isSignedIn: true})
+      this.setState({isSignedIn: true, route: 'home'})
+    } else if (route === 'profile') {
+      this.setState({route: route})
+    } else {
+      this.setState(initialState);
+      this.setState({route: route});
     }
-    this.setState({route: route});
   }
-
+  
   render() {
-    const { isSignedIn, route, box, imageUrl } = this.state;
+    const { isSignedIn, route, box, imageUrl, user } = this.state;
+    let currentView;
+    if (route === 'home' || route === 'guest') {
+      currentView = 
+      <>
+        <Logo />
+        {route === 'home' &&
+          <Rank name={user.name} entries={user.entries}/>
+        }
+        <ImageLinkForm onInputChange={this.onInputChange} onPhotoSubmit={this.onPhotoSubmit} />
+        <FaceRecognition box={box} imageUrl={imageUrl}/>
+      </>
+    } else if (route === 'profile') {
+      currentView = 
+      <ProfileOverview 
+        user={user} 
+        route={route}
+        loadUser={this.loadUser} 
+        onRouteChange={this.onRouteChange}
+      />
+    } else {
+      currentView = <SigninRegister 
+        route={route}
+        loadUser={this.loadUser} 
+        onRouteChange={this.onRouteChange}
+      />
+    }
     return (
       <div className='App'>
+        <ParticlesBg color="#81B29A" type="cobweb" bg={true} />
         <Navigation isSignedIn={isSignedIn} onRouteChange={this.onRouteChange}/>
-        {this.state.route === 'home' 
-        ? <>
-            <Logo />
-            <Rank name={this.state.user.name} entries={this.state.user.entries}/>
-            <ImageLinkForm onInputChange={this.onInputChange} onPhotoSubmit={this.onPhotoSubmit} />
-            <FaceRecognition box={box} imageUrl={imageUrl}/>
-          </>
-        : ( route === 'signin' || route === 'signout'
-            ? <Signin 
-                loadUser={this.loadUser} 
-                onRouteChange={this.onRouteChange}
-              />
-            : <Register 
-                loadUser={this.loadUser} 
-                onRouteChange={this.onRouteChange}
-              />
-          )
-        }
+        {currentView}        
       </div>
     );
   }

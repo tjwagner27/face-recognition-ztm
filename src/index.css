@@ -8,8 +8,10 @@ body {
   padding: 0;
   height: 100%;
   font-family: Courier New, Courier, monospace;
-  background: rgb(129,178,154);
-  background: linear-gradient(213deg, rgba(129,178,154,1) 0%, rgba(242,204,143,1) 100%);
+  /* background: linear-gradient(rgba(255,243,110,1) 1%, rgba(30,204,214,1) 5.6%, rgba(5,54,154,1) 9.9% ); */
+  background: linear-gradient(217deg, rgba(5,54,154,1), rgba(0,0,255,0) 99.71%),
+            linear-gradient(127deg, rgba(30,204,214,1), rgba(0,255,0,0) 50.71%),
+            linear-gradient(336deg, rgba(255,243,110,1), rgba(255,0,0,0) 70.71%);
 }
 
 code {
